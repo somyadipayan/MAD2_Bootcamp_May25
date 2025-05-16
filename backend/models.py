@@ -23,14 +23,14 @@ class Section(db.Model):
     name = db.Column(db.String(80), nullable=False)
     description = db.Column(db.Text, nullable=True)
 
-    books = db.relationship('Book', backref='section')
+    books = db.relationship('Book', backref='section', cascade="all, delete-orphan")
 
 class Book(db.Model):
     id = db.Column(db.Integer, primary_key=True, autoincrement=True)
     name = db.Column(db.String(80), nullable=False)
     author = db.Column(db.String(80), nullable=False)
     description = db.Column(db.Text, nullable=True)
-    section_id = db.Column(db.Integer, db.ForeignKey('section.id'), nullable=False)
+    section_id = db.Column(db.Integer, db.ForeignKey('section.id', ondelete='CASCADE'), nullable=False)
     pdf_path = db.Column(db.String(120), nullable=True)
 
 
