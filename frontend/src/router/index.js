@@ -2,6 +2,9 @@ import { createRouter, createWebHashHistory } from 'vue-router'
 import HomeView from '../views/HomeView.vue'
 import RegisterPage from '../views/RegisterPage.vue'
 import LoginPage from '@/views/LoginPage.vue'
+import CreateSection from '@/views/CreateSection.vue'
+import AllSections from '@/views/AllSections.vue'
+import EditSection from '@/views/EditSection.vue'
 
 const routes = [
   {
@@ -26,6 +29,20 @@ const routes = [
     path: '/login',
     name: 'login',
     component: LoginPage
+  },
+  {
+    path: '/sections',
+    component: AllSections,
+    children: [
+      {
+        path: '/edit/:id',
+        component: EditSection
+      },
+      {
+        path: '/create',
+        component: CreateSection
+      }
+    ]
   }
 
 ]
