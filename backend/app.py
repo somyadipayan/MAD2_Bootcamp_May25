@@ -54,6 +54,45 @@ with app.app_context():
 def index():
     return "Hello World"
 
+
+@app.route('/add_initial_data')
+def add_initial_data():
+    try:
+        section1 = Section(name='Fiction', description='Books related to fictional stories')
+        section2 = Section(name='Non-Fiction', description='Books related to real-life events or topics')
+        section3 = Section(name='Science', description='Books related to scientific topics')
+        section4 = Section(name='History', description='Books related to historical events')
+
+        db.session.add_all([section1, section2, section3, section4])
+        db.session.commit()
+
+        book1 = Book(name='The Great Gatsby', description='Lorem ipsum dolor sit amet, consectetur adipiscing elit.', author='F. Scott Fitzgerald', section_id=section1.id, pdf_path='math.pdf')
+        book2 = Book(name='To Kill a Mockingbird', description='Sed ut perspiciatis unde omnis iste natus error sit voluptatem.', author='Harper Lee', section_id=section1.id, pdf_path='math.pdf')
+        book3 = Book(name='1984', description='But I must explain to you how all this mistaken idea of denouncing pleasure and praising.', author='George Orwell', section_id=section1.id, pdf_path='math.pdf')
+
+        book4 = Book(name='The Diary of a Young Girl', description='At vero eos et accusamus et iusto odio dignissimos ducimus qui blanditiis.', author='Anne Frank', section_id=section2.id, pdf_path='math.pdf')
+        book5 = Book(name='Sapiens: A Brief History of Humankind', description='On the other hand, we denounce with righteous indignation.', author='Yuval Noah Harari', section_id=section2.id, pdf_path='math.pdf')
+        book6 = Book(name='The Power of Habit', description='Nam libero tempore, cum soluta nobis est eligendi optio cumque nihil.', author='Charles Duhigg', section_id=section2.id, pdf_path='math.pdf')
+
+        book7 = Book(name='A Brief History of Time', description='Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim.', author='Stephen Hawking', section_id=section3.id, pdf_path='math.pdf')
+        book8 = Book(name='The Selfish Gene', description='Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua.', author='Richard Dawkins', section_id=section3.id, pdf_path='math.pdf')
+        book9 = Book(name='Astrophysics for People in a Hurry', description='Ut enim ad minima veniam, quis nostrum exercitationem ullam corporis suscipit laboriosam.', author='Neil deGrasse Tyson', section_id=section3.id, pdf_path='math.pdf')
+
+        book10 = Book(name='A People\'s History of the United States', description='Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur.', author='Howard Zinn', section_id=section4.id, pdf_path='math.pdf')
+        book11 = Book(name='The Rise and Fall of the Third Reich', description='Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum.', author='William L. Shirer', section_id=section4.id, pdf_path='math.pdf')
+        book12 = Book(name='Guns, Germs, and Steel', description='Sed ut perspiciatis unde omnis iste natus error sit voluptatem accusantium doloremque laudantium.', author='Jared Diamond', section_id=section4.id, pdf_path='math.pdf')
+
+        book13 = Book(name='The Catcher in the Rye', description='At vero eos et accusamus et iusto odio dignissimos ducimus qui blanditiis praesentium voluptatum deleniti atque.', author='J.D. Salinger', section_id=section1.id, pdf_path='math.pdf')
+        book14 = Book(name='The Hobbit', description='Nam libero tempore, cum soluta nobis est eligendi optio cumque nihil impedit quo minus id quod maxime placeat facere possimus.', author='J.R.R. Tolkien', section_id=section1.id, pdf_path='math.pdf')
+
+        db.session.add_all([book1, book2, book3, book4, book5, book6, book7, book8, book9, book10, book11, book12, book13, book14])
+        db.session.commit()
+
+        return jsonify({'message': 'Initial data added successfully'}), 200
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+
 # REGISTER USER
 @app.route("/register", methods=["POST"])
 def register():
@@ -237,12 +276,21 @@ def get_sections():
     section_data = []
     for section in sections:
         books = section.books
+        book_data = []
+        for book in books:
+            book_data.append({
+            "id": book.id,
+            "name": book.name,
+            "author": book.author,
+            "description": book.description,
+            "pdf_path": book.pdf_path,
+            "available": book.available,
+            })
         section_data.append({
             "id": section.id,
             "name": section.name,
             "description": section.description,
-            "books": [book.name for book in books],
-            "book_ids": [book.id for book in books]
+            "books": book_data
         })
     return jsonify({"sections": section_data}), 200
 
@@ -322,7 +370,7 @@ def delete_section(section_id):
 # Route for adding a book
 # We will be adding a book to a particular section
                 # name: '',
-                # content: '',
+                # description: '',
                 # author: '',
                 # section_id: this.$route.query.section_id,
                 # pdf: null
@@ -356,7 +404,7 @@ def add_book():
     if existing_book:
         return jsonify({"error": "Book already exists"}), 400
    
-    pdf_filename = secure_filename(name)
+    pdf_filename = secure_filename(name+".pdf")
     pdf_path = os.path.join(app.config["UPLOAD_FOLDER"], pdf_filename)
 
     os.makedirs(os.path.dirname(pdf_path), exist_ok=True)
@@ -430,7 +478,8 @@ def view_book(id):
         'description': book.description
     }), 200
 
-@app.route('view-pdf/<int:id>', methods=['GET'])
+
+@app.route('/view-pdf/<int:id>', methods=['GET'])
 def view_pdf(id):
     book = Book.query.get(id)
     if not book:

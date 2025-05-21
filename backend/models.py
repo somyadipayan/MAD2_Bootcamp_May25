@@ -31,6 +31,7 @@ class Book(db.Model):
     author = db.Column(db.String(80), nullable=False)
     description = db.Column(db.Text, nullable=True)
     section_id = db.Column(db.Integer, db.ForeignKey('section.id', ondelete='CASCADE'), nullable=False)
+    available = db.Column(db.Boolean, nullable=False, default=True)
     pdf_path = db.Column(db.String(120), nullable=True)
 
 

@@ -24,7 +24,7 @@
             </div>
             <div class="form-group mb-3">
                 <label for="pdf" class="form-label">PDF</label>
-                <input type="file" v-model="book.pdf" class="form-control" id="pdf" @change="handleFileUpload">
+                <input type="file" class="form-control" id="pdf" @change="handleFileUpload">
             </div>
             <button type="submit" class="btn btn-primary">Submit</button>
         </form>
@@ -43,7 +43,7 @@ export default {
                 name: '',
                 description: '',
                 author: '',
-                section_id: this.$route.query.section_id || '',
+                section_id: this.$route.params.id || '',
                 pdf: null
             }   
         }
@@ -73,7 +73,7 @@ export default {
             try {
                 const formData = new FormData();
                 formData.append('name', this.book.name);
-                formData.append('content', this.book.content);
+                formData.append('description', this.book.description);
                 formData.append('author', this.book.author);
                 formData.append('section_id', this.book.section_id);
                 formData.append('pdf', this.book.pdf);

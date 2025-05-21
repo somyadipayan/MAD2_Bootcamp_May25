@@ -7,6 +7,9 @@
             </button>
             <div class="collapse navbar-collapse" id="navbarNav">
                 <ul v-if="loggedin" class="navbar-nav ms-auto">
+                    <li v-if="librarian" class="nav-item">
+                        <router-link class="nav-link" to="/create-section">Create Section</router-link>
+                    </li>
                     <li v-if="user" class="nav-item">
                         <router-link class="nav-link" to="#">{{ user.name }}</router-link>
                     </li>
