@@ -1,0 +1,11 @@
+Flask
+Flask-Cors
+Flask-JWT-Extended
+Flask-Mail
+Flask-Caching
+Flask-SQLAlchemy
+Flask-Marshmallow
+Flask-Bcrypt
+matplotlib
+Celery
+Redis

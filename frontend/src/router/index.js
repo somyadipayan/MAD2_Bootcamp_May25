@@ -34,6 +34,7 @@ const routes = [
   {
     path: '/sections',
     component: AllSections,
+    meta: { requiresLogin: true }
   },
   {
     path: '/create-section',
@@ -60,7 +61,16 @@ const router = createRouter({
 import { getUserInfo } from '@/utils/auth'
 
 router.beforeEach(async (to, from, next) => {
-  if (to.meta.requiresLibrarian) {
+  if (to.meta.requiresLogin) {
+    const user = await getUserInfo();
+    if (user) {
+      next();
+    } else {
+      alert('You must be logged in to access this page');
+      next('/login');
+    }
+  }
+  else if (to.meta.requiresLibrarian) {
     const user = await getUserInfo();
     if (user && user.librarian) {
       next();

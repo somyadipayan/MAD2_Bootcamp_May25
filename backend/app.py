@@ -1,11 +1,15 @@
+from datetime import timedelta
 from functools import wraps
 import os
+import random
+import string
 from flask import Flask, request, jsonify, send_file
 from models import *
 from config import Config
 from flask_cors import CORS
 from flask_jwt_extended import JWTManager, create_access_token, get_jwt_identity, jwt_required, unset_jwt_cookies
 from werkzeug.utils import secure_filename
+from tools import  task, workers
 
 app = Flask(__name__)
 app.config.from_object(Config)
@@ -15,7 +19,17 @@ db.init_app(app)
 bcrypt.init_app(app)
 jwt = JWTManager(app)
 
+celery = workers.celery
+celery.conf.update(
+    broker_url=app.config["CELERY_BROKER_URL"],
+    result_backend=app.config["CELERY_RESULT_BACKEND"],
+)
+
+celery.Task = workers.ContextTask
+
 CORS(app, supports_credentials=True)
+
+app.app_context().push()
 
 # CREATING ADMIN
 def create_admin():
@@ -52,7 +66,94 @@ with app.app_context():
 
 @app.route("/", methods=["GET"])
 def index():
+    task.add.delay(3,8)
     return "Hello World"
+
+
+
+# Route to add random dummy users
+@app.route('/add_dummy_users')
+def add_dummy_users():
+    try:
+        num_users_to_add = random.randint(5, 10)
+        added_count = 0
+        for i in range(num_users_to_add):
+            # Generate random name
+            name = ''.join(random.choices(string.ascii_letters, k=random.randint(5, 10))).capitalize() + ' ' + \
+                   ''.join(random.choices(string.ascii_letters, k=random.randint(5, 10))).capitalize()
+
+            # Generate random email
+            email_prefix = ''.join(random.choices(string.ascii_lowercase + string.digits, k=random.randint(8, 15)))
+            email_domain = random.choice(['user.com', 'student.org', 'mail.net'])
+            email = f"{email_prefix}@{email_domain}"
+
+            password = "1"
+
+            try:
+                user = User(name=name, email=email, password=password)
+                db.session.add(user)
+                db.session.commit()
+                added_count += 1
+            except Exception as e:
+                db.session.rollback()
+                # If email is duplicate, just skip and try next
+                if "UNIQUE constraint failed: user.email" in str(e):
+                    print(f"Skipping duplicate email: {email}")
+                else:
+                    print(f"Error adding user {email}: {e}")
+                    # Re-raise if it's a critical error not related to unique constraint
+                    # raise
+
+        return jsonify({'message': f'{added_count} dummy users added successfully'}), 200
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'error': str(e)}), 500
+
+# Route to add random dummy issue history
+@app.route('/add_dummy_issue_history')
+def add_dummy_issue_history():
+    try:
+        users = User.query.all()
+        books = Book.query.all()
+
+        if not users or not books:
+            return jsonify({'message': 'Please add initial users and books first using /add_dummy_users and /add_initial_data'}), 400
+
+        num_issues_to_add = random.randint(20, 30)
+        added_count = 0
+        for i in range(num_issues_to_add):
+            user = random.choice(users)
+            book = random.choice(books)
+
+            issue_date = datetime.now() - timedelta(days=random.randint(1, 365)) # Issue date within last year
+            status = random.choice(['requested', 'issued', 'returned', 'revoked'])
+            return_date = None
+
+            if status == 'returned':
+                # Ensure return date is after issue date
+                return_date = issue_date + timedelta(days=random.randint(1, 30))
+                # Make sure book is available again if returned
+                book.available = True
+            elif status in ['requested', 'issued']:
+                book.available = False # Book is not available if requested or issued
+            else: # revoked
+                book.available = True # Book becomes available again if revoked
+
+            issue_entry = IssueHistory(
+                user_id=user.id,
+                book_id=book.id,
+                issue_date=issue_date,
+                return_date=return_date,
+                status=status
+            )
+            db.session.add(issue_entry)
+            added_count += 1
+
+        db.session.commit()
+        return jsonify({'message': f'{added_count} dummy issue history entries added successfully'}), 200
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'error': str(e)}), 500
 
 
 @app.route('/add_initial_data')
@@ -487,6 +588,120 @@ def view_pdf(id):
     
     pdf_path = os.path.join(app.config["UPLOAD_FOLDER"], book.pdf_path)
     return send_file(pdf_path, mimetype='application/pdf')
+
+
+@app.route("/request_book/<int:book_id>", methods=["POST"])
+@jwt_required()
+def request_book(book_id):
+    book = Book.query.get_or_404(book_id)
+    if not book.available:
+        return jsonify({"error": "Book is not available"}), 400
+    current_user = get_jwt_identity()
+    try:
+        new_issue = IssueHistory(book_id=book_id, user_id=current_user['id'])
+        db.session.add(new_issue)
+        db.session.commit()
+        return jsonify({"message": "Book requested successfully"}), 201
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({"error": "Something went wrong: " + str(e)}), 500
+
+
+@app.route("/my-issues", methods=["GET"])
+@jwt_required()
+def my_issues():
+    current_user = get_jwt_identity()
+    issues = IssueHistory.query.filter_by(user_id=current_user['id']).all()
+    issues_data = []
+    for issue in issues:
+        issues_data.append({
+            "id": issue.id,
+            "book_name": issue.book.name,
+            "issue_date": issue.issue_date.strftime("%Y-%m-%d %H:%M"),
+            "return_date": issue.return_date.strftime("%Y-%m-%d %H:%M") if issue.return_date else None,
+            "status": issue.status
+        })
+    return issues_data
+
+# Method to show librarian all the Issues
+@app.route("/all-issues", methods=["GET"])
+@librarian_required
+def all_issues():
+    issues = IssueHistory.query.all()
+    issues_data = []
+    for issue in issues:
+        issues_data.append({
+            "id": issue.id,
+            "user_name": issue.user.name,
+            "book_name": issue.book.name,
+            "issue_date": issue.issue_date.strftime("%Y-%m-%d %H:%M"),
+            "return_date": issue.return_date.strftime("%Y-%m-%d %H:%M") if issue.return_date else None,
+            "status": issue.status
+        })
+    return issues_data
+
+# Accept Issue - Change the status to issued - book is not available
+@app.route("/accept_issue/<int:issue_id>", methods=["PUT"])
+@librarian_required
+def accept_issue(issue_id):
+    issue = IssueHistory.query.get_or_404(issue_id)
+    if not issue.book.available:
+        return jsonify({"error": "Book is not available"}), 400
+    issue.status = "issued"
+    issue.book.available = False
+    try:
+        db.session.commit()
+        # Send email to user
+        return jsonify({"message": "Issue accepted successfully"}), 200
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({"error": "Something went wrong: " + str(e)}), 500
+    
+# Return Issue - Change the status to returned - book is available
+@app.route("/return_issue/<int:issue_id>", methods=["PUT"])
+@jwt_required
+def return_issue(issue_id):
+    issue = IssueHistory.query.get_or_404(issue_id)
+    issue.status = "returned"
+    issue.return_date = datetime.now()
+    issue.book.available = True
+    try:
+        db.session.commit()
+        return jsonify({"message": f"{issue.book.name} returned successfully"}), 200
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({"error": "Something went wrong: " + str(e)}), 500
+
+# Reject Issue - Delete that issue from the database 
+@app.route("/reject_issue/<int:issue_id>", methods=["DELETE"])
+@librarian_required
+def reject_issue(issue_id):
+    issue = IssueHistory.query.get_or_404(issue_id)
+    try:
+        db.session.delete(issue)
+        db.session.commit()
+        # Send email to user
+        return jsonify({"message": "Issue rejected successfully"}), 200
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({"error": "Something went wrong: " + str(e)}), 500
+
+
+# Revoke Issue - Change Status to revoked - book is available
+@app.route("/revoke_issue/<int:issue_id>", methods=["PUT"])
+@librarian_required
+def revoke_issue(issue_id):
+    issue = IssueHistory.query.get_or_404(issue_id)
+    try:
+        issue.status = "revoked"
+        issue.book.available = True
+        issue.return_date = datetime.now()
+        db.session.commit()
+        return jsonify({"message": "Issue revoked successfully"}), 200
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({"error": "Something went wrong: " + str(e)}), 500
+
 
 if __name__ == "__main__":
     app.run(debug=True)

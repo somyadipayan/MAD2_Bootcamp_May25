@@ -41,8 +41,7 @@ class IssueHistory(db.Model):
     book_id = db.Column(db.Integer, db.ForeignKey('book.id'), nullable=False)
     issue_date = db.Column(db.DateTime, nullable=False, default=datetime.now())
     return_date = db.Column(db.DateTime, nullable=True)
-    status = db.Column(db.String(20), nullable=False)  # 'requested', 'issued' , 'returned', 'revoked'
+    status = db.Column(db.String(20), nullable=False, default='requested')  # 'requested', 'issued' , 'returned', 'revoked'
 
     user = db.relationship('User', backref='issues')
     book = db.relationship('Book', backref='issues')
-
