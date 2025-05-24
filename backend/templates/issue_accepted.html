@@ -1,0 +1,118 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Your Book Issue Has Been Accepted!</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        /* Custom styles to ensure better email client compatibility and specific overrides */
+        body {
+            font-family: 'Inter', sans-serif; /* Using Inter font as per instructions */
+            background-color: #f3f4f6; /* Light gray background for the email body */
+            margin: 0;
+            padding: 0;
+            -webkit-text-size-adjust: 100%; /* Prevent font scaling on mobile */
+            -ms-text-size-adjust: 100%; /* Prevent font scaling on mobile */
+        }
+        /* Main container for the email content, centered and with shadow */
+        .email-container {
+            max-width: 600px; /* Max width for desktop view */
+            margin: 20px auto; /* Center the container with some vertical margin */
+            background-color: #ffffff; /* White background for the content area */
+            border-radius: 0.5rem; /* Rounded corners for the container */
+            overflow: hidden; /* Ensures rounded corners are applied correctly */
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06); /* Subtle shadow */
+        }
+        /* Header section of the email */
+        .email-header {
+            background-color: #3b82f6; /* Blue-500 from Tailwind palette */
+            color: #ffffff; /* White text color */
+            padding: 1.5rem; /* Padding around the header text */
+            text-align: center; /* Center align the header text */
+            border-top-left-radius: 0.5rem;
+            border-top-right-radius: 0.5rem;
+        }
+        /* Body section of the email */
+        .email-body {
+            padding: 1.5rem; /* Padding around the body text */
+            color: #374151; /* Gray-700 for main text color */
+        }
+        /* Footer section of the email */
+        .email-footer {
+            background-color: #e5e7eb; /* Gray-200 for footer background */
+            color: #4b5563; /* Gray-600 for footer text color */
+            padding: 1rem; /* Padding around the footer text */
+            text-align: center; /* Center align the footer text */
+            font-size: 0.875rem; /* Smaller font size for footer */
+            border-bottom-left-radius: 0.5rem;
+            border-bottom-right-radius: 0.5rem;
+        }
+        /* Styling for individual detail items within the issue details box */
+        .detail-item {
+            display: flex; /* Use flexbox for label and value alignment */
+            justify-content: space-between; /* Space out label and value */
+            padding: 0.5rem 0; /* Vertical padding for each item */
+            border-bottom: 1px solid #e5e7eb; /* Light gray border at the bottom of each item */
+        }
+        /* Remove bottom border for the last detail item */
+        .detail-item:last-child {
+            border-bottom: none;
+        }
+        /* Styling for the label part of a detail item */
+        .detail-label {
+            font-weight: 600; /* Semibold font weight */
+            color: #1f2937; /* Darker gray for labels */
+        }
+        /* Styling for the value part of a detail item */
+        .detail-value {
+            color: #4b5563; /* Gray-600 for values */
+        }
+        /* Responsive adjustments for smaller screens */
+        @media (max-width: 600px) {
+            .email-container {
+                margin: 0; /* Remove margin on small screens */
+                border-radius: 0; /* Remove border-radius on small screens */
+                box-shadow: none; /* Remove shadow on small screens */
+            }
+            .email-header, .email-footer {
+                border-radius: 0; /* Ensure header/footer corners are not rounded on small screens */
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="email-container">
+        <div class="email-header">
+            <h1 class="text-2xl font-bold">Your Book Issue Has Been Accepted!</h1>
+        </div>
+        <div class="email-body">
+            <p class="mb-4">Hello {{ user_name }},</p>
+            <p class="mb-6">Good news! Your request to issue the book <strong>"{{ book_name }}"</strong> has been accepted by the library.</p>
+
+            <div class="bg-blue-50 p-4 rounded-lg mb-6">
+                <h3 class="text-lg font-semibold text-blue-800 mb-3">Issue Details:</h3>
+                <div class="detail-item">
+                    <span class="detail-label">Book Name:</span>
+                    <span class="detail-value">{{ book_name }}</span>
+                </div>
+                <div class="detail-item">
+                    <span class="detail-label">Issue Date:</span>
+                    <span class="detail-value">{{ issue_date }}</span>
+                </div>
+                <div class="detail-item">
+                    <span class="detail-label">Return By:</span>
+                    <span class="detail-value text-red-600 font-semibold">{{ return_date }}</span>
+                </div>
+            </div>
+
+            <p class="mb-4">Please ensure the book is returned by the specified date to avoid any late fees. We hope you enjoy reading!</p>
+            <p class="mb-4">Thanks & Regards,</p>
+            <p class="font-semibold">The Library Team</p>
+        </div>
+        <div class="email-footer">
+            <p>&copy; 2025 Library Team. All rights reserved.</p>
+        </div>
+    </div>
+</body>
+</html>

@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Monthly Issue Report</title>
+    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
+</head>
+<body>
+    <div class="container">
+        <h1 class="mt-5">Monthly Issue Report</h1>
+        <p>Period: {{ start_date }} to {{ end_date }}</p>
+        <p>Total Books Issued: {{ total_issues }}</p>
+
+        {% for user_id, issues in user_issues.items() %}
+            <h2 class="mt-4">User: {{ issues[0].user.name }}</h2>
+            <table class="table table-striped">
+                <thead>
+                    <tr>
+                        <th scope="col">Book Name</th>
+                        <th scope="col">Issue Date</th>
+                        <th scope="col">Return Date</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for issue in issues %}
+                        <tr>
+                            <td>{{ issue.book.name }}</td>
+                            <td>{{ issue.issue_date.strftime('%Y-%m-%d') }}</td>
+                            <td>{{ issue.return_date.strftime('%Y-%m-%d') if issue.return_date else 'N/A' }}</td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        {% endfor %}
+    </div>
+</body>
+</html>

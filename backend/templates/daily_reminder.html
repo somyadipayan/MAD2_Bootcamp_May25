@@ -1,0 +1,108 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Don't Miss Out! Log in to Your Account</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        /* Custom styles to ensure better email client compatibility and specific overrides */
+        body {
+            font-family: 'Inter', sans-serif; /* Using Inter font as per instructions */
+            background-color: #f3f4f6; /* Light gray background for the email body */
+            margin: 0;
+            padding: 0;
+            -webkit-text-size-adjust: 100%; /* Prevent font scaling on mobile */
+            -ms-text-size-adjust: 100%; /* Prevent font scaling on mobile */
+        }
+        /* Main container for the email content, centered and with shadow */
+        .email-container {
+            max-width: 600px; /* Max width for desktop view */
+            margin: 20px auto; /* Center the container with some vertical margin */
+            background-color: #ffffff; /* White background for the content area */
+            border-radius: 0.5rem; /* Rounded corners for the container */
+            overflow: hidden; /* Ensures rounded corners are applied correctly */
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06); /* Subtle shadow */
+        }
+        /* Header section of the email */
+        .email-header {
+            background-color: #f59e0b; /* Amber-500 from Tailwind palette, for a reminder tone */
+            color: #ffffff; /* White text color */
+            padding: 1.5rem; /* Padding around the header text */
+            text-align: center; /* Center align the header text */
+            border-top-left-radius: 0.5rem;
+            border-top-right-radius: 0.5rem;
+        }
+        /* Body section of the email */
+        .email-body {
+            padding: 1.5rem; /* Padding around the body text */
+            color: #374151; /* Gray-700 for main text color */
+        }
+        /* Footer section of the email */
+        .email-footer {
+            background-color: #e5e7eb; /* Gray-200 for footer background */
+            color: #4b5563; /* Gray-600 for footer text color */
+            padding: 1rem; /* Padding around the footer text */
+            text-align: center; /* Center align the footer text */
+            font-size: 0.875rem; /* Smaller font size for footer */
+            border-bottom-left-radius: 0.5rem;
+            border-bottom-right-radius: 0.5rem;
+        }
+        /* Styling for the call to action button */
+        .cta-button {
+            display: inline-block; /* Make the button behave like an inline-block for padding/margin */
+            background-color: #10b981; /* Emerald-500 for a positive call to action */
+            color: #ffffff; /* White text color */
+            padding: 0.75rem 1.5rem; /* Padding inside the button */
+            border-radius: 0.375rem; /* Slightly rounded corners for the button */
+            text-decoration: none; /* Remove underline from the link */
+            font-weight: 600; /* Semibold font weight */
+            text-align: center; /* Center text within the button */
+            transition: background-color 0.2s ease-in-out; /* Smooth transition for hover effect */
+        }
+        .cta-button:hover {
+            background-color: #059669; /* Darker emerald on hover */
+        }
+        /* Responsive adjustments for smaller screens */
+        @media (max-width: 600px) {
+            .email-container {
+                margin: 0; /* Remove margin on small screens */
+                border-radius: 0; /* Remove border-radius on small screens */
+                box-shadow: none; /* Remove shadow on small screens */
+            }
+            .email-header, .email-footer {
+                border-radius: 0; /* Ensure header/footer corners are not rounded on small screens */
+            }
+            .cta-button {
+                display: block; /* Make button full width on small screens */
+                width: 100%;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="email-container">
+        <div class="email-header">
+            <h1 class="text-2xl font-bold">Don't Miss Out!</h1>
+            <p class="text-lg mt-1">Log in to Your Account</p>
+        </div>
+        <div class="email-body">
+            <p class="mb-4">Hello {{ user_name }},</p>
+            <p class="mb-6">It looks like it's been a little while since you last logged in to your account. We don't want you to miss out on any new updates or important information!</p>
+
+            <p class="mb-6 text-center">
+                <a href="http://localhost:8080/#/login" class="cta-button">Log In Now</a>
+            </p>
+
+            <p class="mb-4">Simply click the button above to quickly access your account and see what's new.</p>
+            <p class="mb-4">If you have any questions, feel free to contact our support team.</p>
+            <p class="mb-4">Best regards,</p>
+            <p class="font-semibold">The Team</p>
+        </div>
+        <div class="email-footer">
+            <p>&copy; 2025 Your Company Name. All rights reserved.</p>
+            <p class="mt-1">This is an automated email, please do not reply.</p>
+        </div>
+    </div>
+</body>
+</html>

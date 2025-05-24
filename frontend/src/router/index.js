@@ -49,6 +49,12 @@ const routes = [
     path: '/addbook/:id',
     name: 'addbook',
     component: AddBook
+  },
+  {
+    path: '/librarian/dashboard',
+    name: 'librarian-dashboard',
+    component: AdminDashboard,
+    meta: { requiresLibrarian: true }
   }
 
 ]
@@ -59,6 +65,7 @@ const router = createRouter({
 })
 
 import { getUserInfo } from '@/utils/auth'
+import AdminDashboard from '@/views/AdminDashboard.vue'
 
 router.beforeEach(async (to, from, next) => {
   if (to.meta.requiresLogin) {

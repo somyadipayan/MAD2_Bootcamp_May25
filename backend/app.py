@@ -3,13 +3,16 @@ from functools import wraps
 import os
 import random
 import string
-from flask import Flask, request, jsonify, send_file
+from flask import Flask, make_response, request, jsonify, send_file
 from models import *
 from config import Config
 from flask_cors import CORS
-from flask_jwt_extended import JWTManager, create_access_token, get_jwt_identity, jwt_required, unset_jwt_cookies
+from flask_jwt_extended import JWTManager, create_access_token, get_jwt_identity, jwt_required, unset_jwt_cookies, get_jwt
 from werkzeug.utils import secure_filename
 from tools import  task, workers
+from tools.mailer import init_app, send_email
+import matplotlib.pyplot as plt
+
 
 app = Flask(__name__)
 app.config.from_object(Config)
@@ -18,6 +21,8 @@ app.config.from_object(Config)
 db.init_app(app)
 bcrypt.init_app(app)
 jwt = JWTManager(app)
+
+init_app(app)
 
 celery = workers.celery
 celery.conf.update(
@@ -53,7 +58,7 @@ def librarian_required(f):
     @jwt_required()
     @wraps(f)
     def decorated_function(*args, **kwargs):
-        current_user = get_jwt_identity()
+        current_user = get_jwt()
         if not current_user['librarian']:
             return jsonify({"error": "Unauthorized"}), 401
         return f(*args, **kwargs)
@@ -257,11 +262,11 @@ def login():
     
     # If user found and password is correct then return token
     if user and bcrypt.check_password_hash(user.password, password):
-        access_token = create_access_token(identity={
-            "id": user.id,
-            "email": user.email,
-            "librarian": user.librarian
-        })
+        access_token = create_access_token(identity=str(user.id), 
+                                           additional_claims={"librarian": user.librarian, 
+                                                              "name": user.name,
+                                                              "email": user.email})
+        user.last_login = datetime.now()
         return jsonify({"message": "Login successful", "access_token": access_token}),200
 
     return jsonify({"error": "Invalid email or password"}), 401 
@@ -298,7 +303,7 @@ def get_user_info():
     :rtype: JSON
     """
     current_user = get_jwt_identity()
-    user = User.query.filter_by(id=current_user['id']).first()
+    user = User.query.filter_by(id=current_user).first()
 
     user_data = {
         "id": user.id,
@@ -598,7 +603,7 @@ def request_book(book_id):
         return jsonify({"error": "Book is not available"}), 400
     current_user = get_jwt_identity()
     try:
-        new_issue = IssueHistory(book_id=book_id, user_id=current_user['id'])
+        new_issue = IssueHistory(book_id=book_id, user_id=current_user)
         db.session.add(new_issue)
         db.session.commit()
         return jsonify({"message": "Book requested successfully"}), 201
@@ -611,7 +616,7 @@ def request_book(book_id):
 @jwt_required()
 def my_issues():
     current_user = get_jwt_identity()
-    issues = IssueHistory.query.filter_by(user_id=current_user['id']).all()
+    issues = IssueHistory.query.filter_by(user_id=current_user).all()
     issues_data = []
     for issue in issues:
         issues_data.append({
@@ -651,7 +656,7 @@ def accept_issue(issue_id):
     issue.book.available = False
     try:
         db.session.commit()
-        # Send email to user
+        task.send_issue_email.delay(issue_id)
         return jsonify({"message": "Issue accepted successfully"}), 200
     except Exception as e:
         db.session.rollback()
@@ -701,6 +706,59 @@ def revoke_issue(issue_id):
     except Exception as e:
         db.session.rollback()
         return jsonify({"error": "Something went wrong: " + str(e)}), 500
+
+
+import pandas as pd
+
+# Method for librarian to download CSV report of all issues
+@app.route("/download_csv_report", methods=["GET"])
+# @librarian_required
+def download_csv_report():
+    issues = IssueHistory.query.all()
+    issues_data = []
+    for issue in issues:
+        issues_data.append({
+            "user_name": issue.user.name,
+            "book_name": issue.book.name,
+            "issue_date": issue.issue_date.strftime("%Y-%m-%d %H:%M"),
+            "return_date": issue.return_date.strftime("%Y-%m-%d %H:%M") if issue.return_date else None,
+            "status": issue.status
+        })
+    df = pd.DataFrame(issues_data)
+    response = make_response(df.to_csv(index=False))
+    response.headers["Content-Disposition"] = "attachment; filename=issues.csv"
+    response.headers["Content-Type"] = "text/csv"
+    return response
+
+import io
+import base64 
+
+def convert_to_base64(fig):
+    # Convert the figure to a base64-encoded string
+    buffer = io.BytesIO()
+    fig.tight_layout()
+    fig.savefig(buffer, format='png')
+    buffer.seek(0)
+    image_png = buffer.getvalue()
+    graph = base64.b64encode(image_png)
+    graph = graph.decode('utf-8')
+    buffer.close()
+    return graph
+
+@app.route("/librarian/dashboard", methods=["GET"])
+@librarian_required
+def librarian_dashboard():
+    total_users = User.query.filter_by(librarian=False).count()
+    total_books = Book.query.count()
+    total_issues = IssueHistory.query.count()
+
+
+    return jsonify({
+        "total_users": total_users,
+        "total_books": total_books,
+        "total_issues": total_issues,
+    }), 200
+
 
 
 if __name__ == "__main__":
